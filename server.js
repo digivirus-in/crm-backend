@@ -459,6 +459,45 @@ app.post('/webhook/meta', async (req, res) => {
   }
 });
 
+// ===== Make.com Webhook for Facebook Leads =====
+app.post('/webhook/make', async (req, res) => {
+  try {
+    console.log('📨 Lead from Make.com:', JSON.stringify(req.body, null, 2));
+    
+    const { name, email, phone, form_id, lead_id, created_time, page_id } = req.body;
+    
+    if (!supabase) {
+      console.error('❌ Supabase not configured');
+      return res.status(500).json({ success: false, error: 'Database not configured' });
+    }
+    
+    // Save to Supabase leads table
+    const { data, error } = await supabase
+      .from('leads')
+      .insert([{
+        name: name || 'Unknown',
+        mobile: phone || '',
+        email: email || '',
+        source: 'Meta Ads',
+        campaign: form_id ? `Form ${form_id}` : 'Facebook Form',
+        status: 'new',
+        created_at: created_time ? new Date(created_time).toISOString() : new Date().toISOString()
+      }])
+      .select();
+    
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+    
+    console.log('✅ Lead saved to CRM:', data[0]);
+    res.json({ success: true, message: 'Lead saved to CRM', lead: data[0] });
+  } catch (err) {
+    console.error('❌ Make webhook error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 async function fetchMetaLead(leadId) {
   if (!META_ACCESS_TOKEN) {
     console.log('No Meta Access Token configured');
