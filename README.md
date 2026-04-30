@@ -2,6 +2,12 @@
 
 ## Step 1: Supabase Database Setup
 
+echo "# Test" >> README.md
+git add .
+git commit -m "Force rebuild"
+git push origin master
+
+
 ### 1.1 Create Supabase Account
 1. Go to: https://supabase.com
 2. Click "Start your project"
