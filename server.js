@@ -15,6 +15,10 @@ const META_VERIFY_TOKEN = process.env.META_VERIFY_TOKEN || 'crm_secret_token';
 
 // ========== HELPER FUNCTIONS ==========
 async function supabaseRequest(endpoint, method = 'GET', body = null) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    return { data: null, error: 'Supabase not configured - missing credentials' };
+  }
+
   const options = {
     method: method,
     headers: {
@@ -27,9 +31,15 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
   if (body) options.body = JSON.stringify(body);
 
   try {
-    const response = await fetch(`${SUPABASE_URL}${endpoint}`, options);
+    const url = SUPABASE_URL + endpoint;
+    const response = await fetch(url, options);
     const data = await response.json();
-    return { data, error: null };
+
+    if (!response.ok) {
+      return { data: null, error: `HTTP ${response.status}: ${JSON.stringify(data)}` };
+    }
+
+    return { data: data, error: null };
   } catch (error) {
     return { data: null, error: error.message };
   }
