@@ -27,11 +27,13 @@ $body = @{
     campaign_name = "Test Campaign"
 } | ConvertTo-Json -Compress
 
+Write-Host "Request body: $body" -ForegroundColor Gray
+
 try {
     $response = Invoke-RestMethod -Uri "http://localhost:3000/webhook/make" -Method Post -ContentType "application/json" -Body $body
 
     Write-Host "`nResponse:" -ForegroundColor Yellow
-    $response | ConvertTo-Json
+    $response | ConvertTo-Json -Depth 10
 
     if ($response.success -eq $true) {
         Write-Host "`nSUCCESS! Lead created with ID: $($response.lead_id)" -ForegroundColor Green
@@ -39,7 +41,18 @@ try {
         Write-Host "`nFailed: $($response.error)" -ForegroundColor Red
     }
 } catch {
-    Write-Host "ERROR: $($_.Exception.Message)" -ForegroundColor Red
+    $statusCode = $_.Exception.Response.StatusCode.value__
+    $responseText = ""
+
+    try {
+        $reader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
+        $responseText = $reader.ReadToEnd()
+        $reader.Close()
+    } catch {}
+
+    Write-Host "`nHTTP Status Code: $statusCode" -ForegroundColor Red
+    Write-Host "Response Body: $responseText" -ForegroundColor Red
+    Write-Host "`nFull Error: $($_.Exception.Message)" -ForegroundColor Red
 }
 
 Write-Host "`nDone!" -ForegroundColor Cyan
